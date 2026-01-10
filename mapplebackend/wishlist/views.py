@@ -28,9 +28,9 @@ class WishlistView(APIView):
 class WishlistItemDeleteView(APIView):
         permission_classes = [IsAuthenticated]
 
-        def get(self, request, pk):
+        def delete(self, request, pk):
             wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
-            WishlistItem.objects.get(pk=pk, Wishlist=request.user.wishlist).delete()
+            WishlistItem.objects.get(pk=pk, wishlist=request.user.wishlist).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     
