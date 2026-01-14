@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'products',
     'cart',
     'wishlist',
+    'orders',
 ]
 
 MIDDLEWARE = [
@@ -152,3 +153,6 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+RAZORPAY_KEY_ID = "rzp_test_S3HCMBANZw2nWN"
+RAZORPAY_KEY_SECRET = "CE3EVGa2bp24Rvuwi59fpO0C"
