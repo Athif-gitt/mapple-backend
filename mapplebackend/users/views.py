@@ -1,9 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
@@ -39,3 +39,33 @@ class LoginApiView(APIView):
             "refresh": str(refresh),
             "access": str(refresh.access_token),
         }, status=status.HTTP_200_OK)
+    
+class MeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        return Response ({
+            "username": request.user.username,
+            "is_staff": request.user.is_staff,
+        })
+    
+class AdminUserListView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        user = User.objects.all()
+        serializer = UserSerializer(user, many=True)
+        return Response(serializer.data)
+    
+class AdminUserDetailsList(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({"detail": "User does not exist"}, status=status.HTTP_404_NOT_FOUND) 
+        
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+            
+    
