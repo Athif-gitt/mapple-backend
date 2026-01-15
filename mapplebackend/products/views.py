@@ -48,4 +48,45 @@ class AdminProductListCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class AdminProductDetailView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, pk):
+        try:
+            product = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return Response({"detail": "not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = ProductSerializer(product)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request, pk):
+        try:
+            product = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return Response({"detail": "Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = ProductSerializer(product, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk):
+        try:
+            product = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return Response({"detail": "Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        product.delete()
+        return Response({"message": "product deleted succesfuly👍"}, status=status.HTTP_204_NO_CONTENT)
+        
+        
+        
+
+
+
+
 
