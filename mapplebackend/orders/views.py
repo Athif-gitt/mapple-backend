@@ -6,8 +6,10 @@ from rest_framework.permissions import IsAuthenticated
 from cart.models import Cart, CartItem   # ← import Cart too
 from .models import Order, OrderItem
 from rest_framework.generics import RetrieveAPIView
-from .serializers import OrderSerializer
+from .serializers import OrderSerializer, OrderItemSerializer
 from rest_framework.generics import ListAPIView
+from rest_framework import permissions, status
+from django.db.models import Sum
 
 
 
@@ -121,3 +123,80 @@ class OrderListView(ListAPIView):
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user).order_by('-created_at')
+    
+class AdminStatsViews(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        total_products = OrderItem.objects.aggregate(
+            total = Sum('quantity')
+        )['total'] or 0
+    
+        total_revenue = Order.objects.filter(status='PAID').aggregate(
+            revenue = Sum('total_amount')
+        )['revenue'] or 0
+
+        total_orders = Order.objects.count()
+
+        paid_orders = Order.objects.filter(status='PAID').count()
+
+        return Response(
+            {
+                "total_products_purchased": total_products,
+                "total_revenue": total_revenue,
+                "total_orders": total_orders,
+                "paid_orders": paid_orders,
+            }
+        )
+    
+class AdminOrderListView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        orders = Order.objects.all().order_by('-created_at')
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class AdminOrderDetailView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return Response(
+                {"detail": "Order not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    
+class AdminOrderStatusUpdateView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def patch(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return Response(
+                {"detail": "Order not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        status_value = request.data.get("status")
+        if not status_value:
+            return Response(
+                {"detail": "Status is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        order.status = status_value
+        order.save()
+
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    
