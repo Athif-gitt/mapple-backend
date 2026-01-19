@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'cart',
     'wishlist',
     'orders',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -139,6 +140,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -156,3 +158,23 @@ SIMPLE_JWT = {
 
 RAZORPAY_KEY_ID = "rzp_test_S3HCMBANZw2nWN"
 RAZORPAY_KEY_SECRET = "CE3EVGa2bp24Rvuwi59fpO0C"
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'E-Commerce API',
+    'DESCRIPTION': 'Admin and User APIs',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+
+    'COMPONENT_SPLIT_REQUEST': True,
+
+    'SECURITY': [{'BearerAuth': []}],
+    'COMPONENTS': {
+        'securitySchemes': {
+            'BearerAuth': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+            }
+        }
+    },
+}

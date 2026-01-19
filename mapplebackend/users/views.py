@@ -67,5 +67,31 @@ class AdminUserDetailsList(APIView):
         
         serializer = UserSerializer(user)
         return Response(serializer.data)
+    
+class AdminUserBlockView(APIView):
+    def patch(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if user == request.user:
+            return Response(
+                {"detail": "You cannot block yourself"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.is_active = not user.is_active
+        user.save()
+        return Response({
+            "id": user.id,
+            "is_active": user.is_active,
+            "message": "User unblocked" if user.is_active else "User blocked"
+        }) 
+        
+
             
     

@@ -110,19 +110,29 @@ class VerifyPaymentView(APIView):
 
         return Response({"success": True, "message": "Payment verified"})
     
-class OrderDetailView(RetrieveAPIView):
+class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = OrderSerializer
 
-    def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+    def get(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk, user=request.user)
+        except Order.DoesNotExist:
+            return Response(
+                {"detail": "Order not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
+
     
-class OrderListView(ListAPIView):
+class OrderListView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = OrderSerializer
 
-    def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).order_by('-created_at')
+    def get(self, request):
+        orders = Order.objects.filter(user=request.user).order_by('-created_at')
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
     
 class AdminStatsViews(APIView):
     permission_classes = [permissions.IsAdminUser]
