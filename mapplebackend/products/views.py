@@ -76,6 +76,7 @@ class AdminProductDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, pk):
+        
         try:
             product = Product.objects.get(pk=pk)
         except Product.DoesNotExist:
