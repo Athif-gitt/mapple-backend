@@ -7,13 +7,12 @@ from rest_framework.response import Response
 class ProductListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = ProductSerializer
-    queryset = Product.objects.all()
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Product.objects.all().order_by("-id")  # ✅ ORDERED
 
-        category = self.request.query_params.get('category')
-        search = self.request.query_params.get('search')
+        category = self.request.query_params.get("category")
+        search = self.request.query_params.get("search")
 
         if category:
             queryset = queryset.filter(category__iexact=category)
@@ -26,6 +25,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
             )
 
         return queryset
+
     
 class AdminProductListCreateView(APIView):
     permission_classes = [permissions.IsAdminUser]
