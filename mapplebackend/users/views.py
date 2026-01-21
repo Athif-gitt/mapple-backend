@@ -90,7 +90,7 @@ class AdminUserBlockView(APIView):
             "id": user.id,
             "is_active": user.is_active,
             "message": "User unblocked" if user.is_active else "User blocked"
-        }) 
+        }, status=status.HTTP_200_OK) 
         
 
             

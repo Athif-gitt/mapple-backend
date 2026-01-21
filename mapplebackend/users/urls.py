@@ -8,6 +8,7 @@ urlpatterns = [
     path('login/', LoginApiView.as_view(), name='token_obtain_pair'),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('me/', MeAPIView.as_view()),
+    
     path('admin/users/', AdminUserListView.as_view()),
     path('admin/users/<int:pk>/', AdminUserDetailsList.as_view()),
     path('admin/users/<int:pk>/block/', AdminUserBlockView.as_view()),

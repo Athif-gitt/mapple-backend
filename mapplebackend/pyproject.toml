@@ -1,0 +1,25 @@
+touch pyproject.toml
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+skip-string-normalization = false
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["core", "apps"]
+combine_as_imports = true
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = [
+  "E203",
+  "W503"
+]
+exclude = [
+  ".venv",
+  "venv",
+  "__pycache__",
+  "migrations"
+]
