@@ -10,6 +10,7 @@ from .serializers import OrderSerializer, OrderItemSerializer
 from rest_framework.generics import ListAPIView
 from rest_framework import permissions, status
 from django.db.models import Sum
+from products.models import Product
 
 
 
@@ -18,24 +19,63 @@ class CreateOrderView(APIView):
 
     def post(self, request):
         user = request.user
+        order_type = request.query_params.get("type", "cart")
 
-        # Get user's cart
-        try:
-            cart = Cart.objects.get(user=user)
-        except Cart.DoesNotExist:
-            return Response({"detail": "Cart not found"}, status=400)
+        items = []
+        total_amount = 0
 
-        # Get cart items
-        cart_items = CartItem.objects.filter(cart=cart)
-        if not cart_items.exists():
-            return Response({"detail": "Cart is empty"}, status=400)
+        # -------------------------
+        # CART CHECKOUT (existing)
+        # -------------------------
+        if order_type == "cart":
+            try:
+                cart = Cart.objects.get(user=user)
+            except Cart.DoesNotExist:
+                return Response({"detail": "Cart not found"}, status=400)
 
-        # Calculate total
-        total_amount = sum(item.product.price * item.quantity for item in cart_items)
-        total_paise = int(total_amount * 100)  # Razorpay uses paise
+            cart_items = CartItem.objects.filter(cart=cart)
+            if not cart_items.exists():
+                return Response({"detail": "Cart is empty"}, status=400)
+
+            for item in cart_items:
+                total_amount += item.product.price * item.quantity
+                items.append({
+                    "product": item.product,
+                    "quantity": item.quantity,
+                    "price": item.product.price
+                })
+
+        # -------------------------
+        # SINGLE PRODUCT CHECKOUT
+        # -------------------------
+        elif order_type == "single":
+            product_id = request.query_params.get("product_id")
+            if not product_id:
+                return Response({"detail": "Product ID required"}, status=400)
+
+            try:
+                product = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                return Response({"detail": "Product not found"}, status=404)
+
+            total_amount = product.price
+            items.append({
+                "product": product,
+                "quantity": 1,
+                "price": product.price
+            })
+
+        else:
+            return Response({"detail": "Invalid order type"}, status=400)
+
+        # Razorpay uses paise
+        total_paise = int(total_amount * 100)
 
         # Create Razorpay order
-        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+        client = razorpay.Client(
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+        )
+
         razorpay_order = client.order.create({
             "amount": total_paise,
             "currency": "INR",
@@ -46,26 +86,28 @@ class CreateOrderView(APIView):
         order = Order.objects.create(
             user=user,
             total_amount=total_amount,
-            razorpay_order_id=razorpay_order['id'],
-            status='PENDING'
+            razorpay_order_id=razorpay_order["id"],
+            status="PENDING",
+            order_type=order_type
         )
 
-        # Convert CartItems → OrderItems
-        for item in cart_items:
+        # Create OrderItems
+        for item in items:
             OrderItem.objects.create(
                 order=order,
-                product=item.product,
-                quantity=item.quantity,
-                price=item.product.price
+                product=item["product"],
+                quantity=item["quantity"],
+                price=item["price"]
             )
 
         return Response({
-            "order_id": razorpay_order['id'],
+            "order_id": razorpay_order["id"],
             "amount": total_paise,
             "currency": "INR",
             "key": settings.RAZORPAY_KEY_ID,
             "order_db_id": order.id
         })
+
 
 
 class VerifyPaymentView(APIView):
