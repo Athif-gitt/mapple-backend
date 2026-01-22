@@ -84,6 +84,20 @@ class AdminProductDetailView(APIView):
         
         product.delete()
         return Response({"message": "product deleted succesfuly👍"}, status=status.HTTP_204_NO_CONTENT)
+    
+class ProductDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+    def get(self, request, pk):
+        try:
+            product = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return Response({"detail": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProductSerializer(product)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+            
+
+    
         
         
         

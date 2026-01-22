@@ -8,7 +8,7 @@ from .serializers import WishlistItemSerializer
 from rest_framework import status
 
 class WishlistView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
@@ -24,15 +24,19 @@ class WishlistView(APIView):
             wishlist = wishlist,
             product = product
         )
-        return Response(WishlistItemSerializer(item).data, status )
+        return Response(WishlistItemSerializer(item).data, status=status.HTTP_200_OK)
     
 class WishlistItemDeleteView(APIView):
-        permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
-        def delete(self, request, pk):
-            wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
-            WishlistItem.objects.get(pk=pk, wishlist=request.user.wishlist).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    def delete(self, request, product_id):
+        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
 
+        WishlistItem.objects.filter(
+            wishlist=wishlist,
+            product_id=product_id
+        ).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 
