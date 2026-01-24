@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/wishlist/', include('wishlist.urls')),
     path('api/orders/', include('orders.urls')),
     path('api/adresses/', include('adresses.urls')),
+    path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
 ]
 
 urlpatterns += [

@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'orders',
     'drf_spectacular',
     'adresses',
+    "oauth2_provider",
 ]
 
 MIDDLEWARE = [
@@ -59,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "oauth2_provider.middleware.OAuth2TokenMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -144,7 +146,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -182,3 +186,13 @@ SPECTACULAR_SETTINGS = {
 }
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+OAUTH2_PROVIDER = {
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 86400,
+    "ROTATE_REFRESH_TOKEN": True,
+    "SCOPES": {
+        "read": "Read access",
+        "write": "Write access",
+    },
+}

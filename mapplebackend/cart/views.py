@@ -5,8 +5,10 @@ from rest_framework import status
 from .models import Cart, CartItem
 from .serializers import CartSerializer
 from products.models import Product
+from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 
 class CartView(APIView):
+    authentication_classes = [OAuth2Authentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
