@@ -6,6 +6,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
+from django.conf import settings
+from django.shortcuts import redirect
+from django.utils.timezone import now
+from datetime import timedelta
+
+from oauth2_provider.models import Application, AccessToken, RefreshToken
+from oauthlib.common import generate_token
+
 
 class RegisterApiView(APIView):
     authentication_classes = []
@@ -91,6 +99,35 @@ class AdminUserBlockView(APIView):
             "is_active": user.is_active,
             "message": "User unblocked" if user.is_active else "User blocked"
         }, status=status.HTTP_200_OK) 
+    
+def google_login_success(request):
+    user = request.user
+
+    if not user.is_authenticated:
+        return redirect(f"{settings.FRONTEND_URL}/login?error=google")
+
+    app = Application.objects.get(name="mapple-frontend")
+
+    access_token = AccessToken.objects.create(
+        user=user,
+        application=app,
+        token=generate_token(),
+        expires=now() + timedelta(hours=10),
+        scope="read write",
+    )
+
+    refresh_token = RefreshToken.objects.create(
+        user=user,
+        application=app,
+        token=generate_token(),
+        access_token=access_token,
+    )
+
+    return redirect(
+        f"{settings.FRONTEND_URL}/oauth/callback"
+        f"?access={access_token.token}"
+        f"&refresh={refresh_token.token}"
+    )
         
 
             

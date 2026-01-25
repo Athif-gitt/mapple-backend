@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/orders/', include('orders.urls')),
     path('api/adresses/', include('adresses.urls')),
     path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
+    path("api/auth/", include("users.urls")),
 ]
 
 urlpatterns += [
@@ -46,4 +47,10 @@ urlpatterns += [
         name="redoc",
     ),
 ]
+
+
+urlpatterns += [
+    path("accounts/", include("allauth.urls")),
+]
+
 
