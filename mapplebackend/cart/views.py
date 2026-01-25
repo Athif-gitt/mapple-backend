@@ -15,6 +15,7 @@ class CartView(APIView):
         cart, created = Cart.objects.get_or_create(user=request.user)
         serializer = CartSerializer(cart)
         return Response(serializer.data)
+    
 
     def post(self, request):
         product_id = request.data.get("product_id")
