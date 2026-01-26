@@ -1,16 +1,19 @@
 import razorpay
 from django.conf import settings
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from cart.models import Cart, CartItem   # ← import Cart too
-from .models import Order, OrderItem
-from rest_framework.generics import RetrieveAPIView
-from .serializers import OrderSerializer, OrderItemSerializer
-from rest_framework.generics import ListAPIView
 from rest_framework import permissions, status
-from django.db.models import Sum
+
+from cart.models import Cart, CartItem
 from products.models import Product
+from adresses.models import Address
+
+from .models import Order, OrderItem, OrderAddress
+from .serializers import OrderSerializer
+from django.db.models import Sum
+
 
 
 
@@ -25,17 +28,17 @@ class CreateOrderView(APIView):
         total_amount = 0
 
         # -------------------------
-        # CART CHECKOUT (existing)
+        # CART CHECKOUT
         # -------------------------
         if order_type == "cart":
             try:
                 cart = Cart.objects.get(user=user)
             except Cart.DoesNotExist:
-                return Response({"detail": "Cart not found"}, status=400)
+                return Response({"detail": "Cart not found"}, status=status.HTTP_400_BAD_REQUEST)
 
             cart_items = CartItem.objects.filter(cart=cart)
             if not cart_items.exists():
-                return Response({"detail": "Cart is empty"}, status=400)
+                return Response({"detail": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
 
             for item in cart_items:
                 total_amount += item.product.price * item.quantity
@@ -51,12 +54,12 @@ class CreateOrderView(APIView):
         elif order_type == "single":
             product_id = request.query_params.get("product_id")
             if not product_id:
-                return Response({"detail": "Product ID required"}, status=400)
+                return Response({"detail": "Product ID required"}, status=status.HTTP_400_BAD_REQUEST)
 
             try:
                 product = Product.objects.get(id=product_id)
             except Product.DoesNotExist:
-                return Response({"detail": "Product not found"}, status=404)
+                return Response({"detail": "Product not found"}, status=status.HTTP_400_BAD_REQUEST)
 
             total_amount = product.price
             items.append({
@@ -66,12 +69,25 @@ class CreateOrderView(APIView):
             })
 
         else:
-            return Response({"detail": "Invalid order type"}, status=400)
+            return Response({"detail": "Invalid order type"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Razorpay uses paise
+        # -------------------------
+        # ADDRESS (REQUIRED)
+        # -------------------------
+        address_id = request.data.get("address_id")
+        if not address_id:
+            return Response({"detail": "Address is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            address = Address.objects.get(id=address_id, user=user)
+        except Address.DoesNotExist:
+            return Response({"detail": "Invalid address"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # -------------------------
+        # RAZORPAY ORDER
+        # -------------------------
         total_paise = int(total_amount * 100)
 
-        # Create Razorpay order
         client = razorpay.Client(
             auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
         )
@@ -82,7 +98,9 @@ class CreateOrderView(APIView):
             "payment_capture": 1
         })
 
-        # Create Order in DB
+        # -------------------------
+        # CREATE ORDER
+        # -------------------------
         order = Order.objects.create(
             user=user,
             total_amount=total_amount,
@@ -91,7 +109,24 @@ class CreateOrderView(APIView):
             order_type=order_type
         )
 
-        # Create OrderItems
+        # -------------------------
+        # SNAPSHOT ADDRESS (IMPORTANT)
+        # -------------------------
+        OrderAddress.objects.create(
+            order=order,
+            full_name=address.full_name,
+            phone=address.phone,
+            line1=address.line1,
+            line2=address.line2,
+            city=address.city,
+            state=address.state,
+            pincode=address.pincode,
+            country=address.country,
+        )
+
+        # -------------------------
+        # CREATE ORDER ITEMS
+        # -------------------------
         for item in items:
             OrderItem.objects.create(
                 order=order,
@@ -110,6 +145,7 @@ class CreateOrderView(APIView):
 
 
 
+
 class VerifyPaymentView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -122,35 +158,38 @@ class VerifyPaymentView(APIView):
         razorpay_signature = data.get("razorpay_signature")
 
         if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
-            return Response({"detail": "Missing payment fields"}, status=400)
+            return Response({"detail": "Missing payment fields"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Verify signature
-            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+            client = razorpay.Client(
+                auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+            )
             client.utility.verify_payment_signature({
-                'razorpay_order_id': razorpay_order_id,
-                'razorpay_payment_id': razorpay_payment_id,
-                'razorpay_signature': razorpay_signature
+                "razorpay_order_id": razorpay_order_id,
+                "razorpay_payment_id": razorpay_payment_id,
+                "razorpay_signature": razorpay_signature
             })
         except razorpay.errors.SignatureVerificationError:
-            return Response({"detail": "Invalid signature"}, status=400)
+            return Response({"detail": "Invalid signature"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Payment is valid -> update order
         try:
-            order = Order.objects.get(razorpay_order_id=razorpay_order_id, user=user)
+            order = Order.objects.get(
+                razorpay_order_id=razorpay_order_id,
+                user=user
+            )
         except Order.DoesNotExist:
-            return Response({"detail": "Order not found"}, status=404)
+            return Response({"detail": "Order not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        order.status = 'PAID'
+        order.status = "PAID"
         order.razorpay_payment_id = razorpay_payment_id
         order.razorpay_signature = razorpay_signature
         order.save()
 
-        # Clear cart
-        user_cart = Cart.objects.get(user=user)
-        CartItem.objects.filter(cart=user_cart).delete()
+        # Clear cart AFTER successful payment
+        CartItem.objects.filter(cart__user=user).delete()
 
-        return Response({"success": True, "message": "Payment verified"})
+        return Response({"success": True, "message": "Payment verified", "order_id": order.id})
+
     
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticated]

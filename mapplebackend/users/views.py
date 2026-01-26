@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, ProfileSummarySerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from django.conf import settings
@@ -11,8 +11,17 @@ from django.shortcuts import redirect
 from django.utils.timezone import now
 from datetime import timedelta
 
-from oauth2_provider.models import Application, AccessToken, RefreshToken
+from oauth2_provider.models import Application, AccessToken, RefreshToken as OoathRefreshToken
 from oauthlib.common import generate_token
+
+from orders.models import Order
+from orders.serializers import RecentOrderSerializer
+from cart.models import CartItem
+from wishlist.models import WishlistItem
+
+from django.db.models import Sum
+
+from users.models import UserProfile
 
 
 class RegisterApiView(APIView):
@@ -116,7 +125,7 @@ def google_login_success(request):
         scope="read write",
     )
 
-    refresh_token = RefreshToken.objects.create(
+    refresh_token = OoathRefreshToken.objects.create(
         user=user,
         application=app,
         token=generate_token(),
@@ -130,5 +139,46 @@ def google_login_success(request):
     )
         
 
+class ProfileDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Profile
+        profile, _ = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+        "full_name": user.username or user.email.split("@")[0]}
+        )
+        profile_data = ProfileSummarySerializer(profile).data
+
+        # Stats
+        orders_qs = Order.objects.filter(user=user)
+        total_spent = orders_qs.filter(status="PAID").aggregate(
+            total=Sum("total_amount")
+        )["total"] or 0
+
+        stats = {
+    "orders": orders_qs.count(),
+    "wishlist": WishlistItem.objects.filter(
+        wishlist__user=user
+    ).count(),
+    "cart_items": CartItem.objects.filter(
+        cart__user=user
+    ).count(),
+    "total_spent": total_spent,
+}
+
+
+        # Recent Orders (preview only)
+        recent_orders = orders_qs.order_by("-created_at")[:3]
+        recent_orders_data = RecentOrderSerializer(recent_orders, many=True).data
+
+        return Response({
+            "profile": profile_data,
+            "stats": stats,
+            "recent_orders": recent_orders_data
+        }, status=status.HTTP_200_OK)
             
     

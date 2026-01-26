@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-from products.models import Product   
+from products.models import Product  
+from django.conf import settings
 
 class Order(models.Model):
     STATUS_CHOICES = (
@@ -29,6 +30,27 @@ class Order(models.Model):
     razorpay_signature = models.CharField(max_length=200, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+class OrderAddress(models.Model):
+    order = models.OneToOneField(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="delivery_address"
+    )
+
+    full_name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=15)
+
+    line1 = models.CharField(max_length=255)
+    line2 = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=50)
+    state = models.CharField(max_length=50)
+    pincode = models.CharField(max_length=10)
+    country = models.CharField(max_length=50)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 
     
 

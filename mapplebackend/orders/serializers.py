@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Order, OrderItem
+from .models import Order, OrderItem, OrderAddress
 from products.serializers import ProductSerializer  
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -9,15 +9,46 @@ class OrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['id', 'product', 'quantity', 'price']
 
+class OrderAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderAddress
+        fields = [
+            "full_name",
+            "phone",
+            "line1",
+            "line2",
+            "city",
+            "state",
+            "pincode",
+            "country",
+        ]
+
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
-    username = serializers.CharField(source='user.username', read_only=True)
+    delivery_address = OrderAddressSerializer(read_only=True)
 
     class Meta:
         model = Order
         fields = [
-            'id', 'user', 'total_amount', 'status',
-            'razorpay_order_id', 'created_at', 'items', 'username'
+            "id",
+            "order_type",
+            "total_amount",
+            "status",
+            "created_at",
+            "items",
+            "delivery_address",
         ]
-        read_only_fields = ['user', 'status', 'razorpay_order_id']
+
+class RecentOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "total_amount",
+            "status",
+            "created_at",
+        )
+
+
+
