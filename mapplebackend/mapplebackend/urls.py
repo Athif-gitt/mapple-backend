@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/adresses/', include('adresses.urls')),
     path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
     path("api/auth/", include("users.urls")),
+    path('api/reviews/', include('reviews.urls')),
 ]
 
 urlpatterns += [
