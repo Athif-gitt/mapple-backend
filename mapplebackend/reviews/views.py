@@ -9,23 +9,42 @@ from reviews.serializers import ReviewSerializer
 
 from django.shortcuts import get_object_or_404
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 
 class ProductReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, product_id):
-        product = Product.objects.get(id=product_id)
+        product = get_object_or_404(Product, id=product_id)
 
         serializer = ReviewSerializer(
             data=request.data,
             context={
                 "request": request,
-                "product": product
+                "product": product,
             }
         )
 
         if serializer.is_valid():
-            serializer.save(user=request.user, product=product)
+            review = serializer.save(user=request.user, product=product)
+
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"reviews_{product.id}",
+                {
+                    "type": "review_created",
+                    "data": {
+                        "id": review.id,
+                        "user": request.user.username,
+                        "rating": review.rating,
+                        "comment": review.comment,
+                        "created_at": review.created_at.isoformat(),
+                    },
+                },
+            )
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

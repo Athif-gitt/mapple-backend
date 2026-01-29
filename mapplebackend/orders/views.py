@@ -14,6 +14,9 @@ from .models import Order, OrderItem, OrderAddress
 from .serializers import OrderSerializer
 from django.db.models import Sum
 
+from notifications.services import notify_user
+
+
 
 
 
@@ -109,6 +112,13 @@ class CreateOrderView(APIView):
             order_type=order_type
         )
 
+        notify_user(
+    user,
+    "Order created",
+    f"Your order #{order.id} has been created. Please complete the payment."
+)
+
+
         # -------------------------
         # SNAPSHOT ADDRESS (IMPORTANT)
         # -------------------------
@@ -184,6 +194,13 @@ class VerifyPaymentView(APIView):
         order.razorpay_payment_id = razorpay_payment_id
         order.razorpay_signature = razorpay_signature
         order.save()
+
+        notify_user(
+    user,
+    "Payment successful",
+    f"Payment received for order #{order.id}. Your order is now confirmed."
+)
+
 
         # Clear cart AFTER successful payment
         CartItem.objects.filter(cart__user=user).delete()
@@ -286,6 +303,13 @@ class AdminOrderStatusUpdateView(APIView):
 
         order.status = status_value
         order.save()
+
+        notify_user(
+    order.user,
+    "Order status updated",
+    f"Your order #{order.id} status has been updated to {status_value}."
+)
+
 
         serializer = OrderSerializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)

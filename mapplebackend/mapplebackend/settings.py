@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'adresses',
     "oauth2_provider",
     'reviews',
+    "channels",
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -83,6 +85,20 @@ TEMPLATES = [
         },
     },
 ]
+
+ASGI_APPLICATION = "mapplebackend.asgi.application"
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+
 
 WSGI_APPLICATION = 'mapplebackend.wsgi.application'
 
