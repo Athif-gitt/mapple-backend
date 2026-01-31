@@ -27,33 +27,50 @@ SECRET_KEY = 'django-insecure-llp07fulv#_n$8ri58-rxfbxli-(&ed74gukchaz9!%pktm@p&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["api.13.232.149.147.nip.io",
+    "13.232.149.147",]
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    # 'rest_framework.authtoken',
-    'users',
-    'corsheaders',
-    'products',
-    'cart',
-    'wishlist',
-    'orders',
-    'drf_spectacular',
-    'adresses',
-    "oauth2_provider",
-    'reviews',
+    # Django
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+
+    # Third-party
+    "rest_framework",
+    "django.contrib.sites",
+
+    "rest_framework.authtoken",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
+
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+
+    "corsheaders",
     "channels",
-    'notifications',
+
+    # Local apps (EXPLICIT)
+    "users.apps.UsersConfig",
+    "products.apps.ProductsConfig",
+    "cart.apps.CartConfig",
+    "orders.apps.OrdersConfig",
+    "reviews.apps.ReviewsConfig",
+    "notifications.apps.NotificationsConfig",
+    "wishlist.apps.WishlistConfig",
+    "addresses",
 ]
+
+SITE_ID = 1
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  
@@ -64,7 +81,6 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     "allauth.account.middleware.AccountMiddleware",
-    "oauth2_provider.middleware.OAuth2TokenMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -93,7 +109,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("redis", 6379)],
         },
     },
 }
@@ -109,13 +125,14 @@ WSGI_APPLICATION = 'mapplebackend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mappledb',
-        'USER': 'mappleuser',
-        'PASSWORD': 'athif0000',
-        'HOST': 'localhost',
+        'NAME': 'mapple',
+        'USER': 'mapple',
+        'PASSWORD': 'mapple123',
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
+
 
 
 # Password validation
@@ -164,7 +181,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         
     ),
@@ -214,22 +230,6 @@ OAUTH2_PROVIDER = {
         "write": "Write access",
     },
 }
-INSTALLED_APPS += [
-    "django.contrib.sites",
-
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
-]
-
-SITE_ID = 1
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
-
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = "email"
@@ -241,12 +241,23 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://api.13.232.149.147.nip.io",
+]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 FRONTEND_URL = "http://localhost:5173"
 
-LOGIN_REDIRECT_URL = "/api/auth/google/success/"
+#LOGIN_REDIRECT_URL = "/api/auth/google/success/"
 
 LOGOUT_REDIRECT_URL = "/"
+
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+)
 
 
 

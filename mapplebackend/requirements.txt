@@ -3,9 +3,12 @@ attrs==25.4.0
 black==26.1.0
 certifi==2026.1.4
 charset-normalizer==3.4.4
+channels[daphne]
+channels-redis
 click==8.3.1
 dj-database-url==3.1.0
-Django==6.0
+Django>=4.2,<5.0
+django-oauth-toolkit==2.4.0
 django-cors-headers==4.9.0
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
@@ -36,3 +39,7 @@ sqlparse==0.5.5
 uritemplate==4.2.0
 urllib3==2.6.3
 whitenoise==6.11.0
+Pillow
+dj-rest-auth
+dj-rest-auth[with_social]
+django-allauth

@@ -22,16 +22,24 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path('api/auth/', include('users.urls')),
+    path("api/dj-auth/", include("dj_rest_auth.urls")),
+    path("api/dj-auth/registration/", include("dj_rest_auth.registration.urls")),
     path('api/products/', include('products.urls')),
     path('api/cart/', include('cart.urls')),
     path('api/wishlist/', include('wishlist.urls')),
     path('api/orders/', include('orders.urls')),
-    path('api/adresses/', include('adresses.urls')),
-    path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
-    path("api/auth/", include("users.urls")),
+    path('api/addresses/', include('addresses.urls')),
     path('api/reviews/', include('reviews.urls')),
     path('api/notifications/', include('notifications.urls')),
 ]
@@ -48,11 +56,6 @@ urlpatterns += [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
-]
-
-
-urlpatterns += [
-    path("accounts/", include("allauth.urls")),
 ]
 
 

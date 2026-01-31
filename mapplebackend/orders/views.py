@@ -8,7 +8,7 @@ from rest_framework import permissions, status
 
 from cart.models import Cart, CartItem
 from products.models import Product
-from adresses.models import Address
+from addresses.models import Address
 
 from .models import Order, OrderItem, OrderAddress
 from .serializers import OrderSerializer

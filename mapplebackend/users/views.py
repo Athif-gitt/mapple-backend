@@ -11,7 +11,6 @@ from django.shortcuts import redirect
 from django.utils.timezone import now
 from datetime import timedelta
 
-from oauth2_provider.models import Application, AccessToken, RefreshToken as OoathRefreshToken
 from oauthlib.common import generate_token
 
 from orders.models import Order
