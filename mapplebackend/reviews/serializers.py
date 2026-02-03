@@ -21,6 +21,6 @@ class ReviewSerializer(serializers.ModelSerializer):
 
         if Review.objects.filter(user=user, product=product).exists():
             raise serializers.ValidationError(
-                "One review per user"
+                "Already reviewed"
             )
         return data
